@@ -8,10 +8,19 @@ namespace MagisterProjectConsole
 {
     class ApproximateBuilder
     {
-        private double xZero;
-        private double yZero;
+        //Maximum values of x and y
+        private double xMax;
+        private double yMax;
+
+        //Count of r/z seperations
         private int nKsy;
         private int nNyu;
+
+        //Count of x/y points
+        private int nX;
+        private int nY;
+
+        //h = 1/n
         private double hKsy;
         private double hNyu;
 
@@ -32,24 +41,33 @@ namespace MagisterProjectConsole
         double[,] fi;
         double[,] psy;
 
-        public ApproximateBuilder(int nKsy, int nNyu)
+        public ApproximateBuilder(int nKsy, int nNyu, double xMax, double yMax)
         {
+            this.nKsy = nKsy;
+            this.nNyu = nNyu;
+
             this.hKsy = 1 / nKsy;
             this.hNyu = 1 / nNyu;
-            a = new double[nKsy, nNyu];
-            b = new double[nKsy, nNyu];
-            yu = new double[nKsy, nNyu];
-            x = new double[nKsy, nNyu];
-            y = new double[nKsy, nNyu];
-            xNext = new double[nKsy, nNyu];
-            yNext = new double[nKsy, nNyu];
-            k = new double[nKsy, nNyu];
-            fi = new double[nKsy, nNyu];
-            psy = new double[nKsy, nNyu];
+
+            this.nX = nKsy + 1;
+            this.nY = nNyu + 1;
+
+            a = new double[nKsy + 1, nNyu + 1];
+            b = new double[nKsy + 1, nNyu + 1];
+            yu = new double[nKsy + 1, nNyu + 1];
+            x = new double[nKsy + 1, nNyu + 1];
+            y = new double[nKsy + 1, nNyu + 1];
+            xNext = new double[nKsy + 1, nNyu + 1];
+            yNext = new double[nKsy + 1, nNyu + 1];
+            k = new double[nKsy + 1, nNyu + 1];
+            fi = new double[nKsy + 1, nNyu + 1];
+            psy = new double[nKsy + 1, nNyu + 1];
+            this.xMax = xMax;
+            this.yMax = yMax;
 
         }
-        public double XZero { get => xZero; set => xZero = value; }
-        public double YZero { get => yZero; set => yZero = value; }
+        public double XMax { get => xMax; set => xMax = value; }
+        public double YMax { get => yMax; set => yMax = value; }
         public int NKsy { get => nKsy; set => nKsy = value; }
         public int NNyu { get => nNyu; set => nNyu = value; }
         public double SolveA(int i, int j)
@@ -126,6 +144,76 @@ namespace MagisterProjectConsole
                 }
             }
             return buf < Etta;
+        }
+        private void SetXBounds()
+        {
+            double hR = xMax / nKsy;
+            double hZ = yMax / (nKsy + nNyu);
+            double hFi = Math.PI / (2 * nNyu);
+            Console.Write("{0} \r\n", nX);
+            for(int i=0; i< this.nX; i++)
+            {
+                x[i, 0] = i * hR;
+                x[i, 10] = 0;
+            }
+            Console.Write("{0} \r\n", nY);
+            for (int j=0; j<this.nY; j++)
+            {
+                x[0, j] = 0;
+                x[this.nKsy, this.nNyu - j] = 0.5 * Math.Sin(j * hFi);
+            }
+        }
+        private void SetYBounds()
+        {
+            double hR = xMax / nKsy;
+            double hZ = yMax / (nKsy + nNyu);
+            double hFi = Math.PI / (2 * nNyu);
+            for (int i = 0; i < this.nX; i++)
+            {
+                y[i, 0] = 0;
+                y[i, 10] = xMax * (nNyu / (nKsy + nNyu)) + i*hZ;
+            }
+            for(int j=0; j<this.nY; j++)
+            {
+                y[0, j] = j * hZ;
+                y[5, 10 - j] = Math.Cos(j * hFi);
+            }
+        }
+        private void Print(double[,] x)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            for (int j = nNyu; j>= 0; j--)
+            {
+                stringBuilder.Append("| ");
+                for (int i = 0; i < nX; i++)
+                {
+                    stringBuilder.Append(Math.Round(x[i, j], 3));
+                    stringBuilder.Append(" ");
+                }
+                stringBuilder.Append("| \r\n");
+
+            }
+            stringBuilder.Append("\r\n \r\n");
+            Console.Write(stringBuilder.ToString());
+        }
+        public void Solve()
+        {
+            SetXBounds();
+            Print(x);
+            SetYBounds();
+            Print(y);
+
+            for (int i = 1; i < nX - 1; i++)
+            {
+                a[i, 1] = SolveA(i, 1);
+                Console.Write("{0: 0,##} ", a[i, 1]);
+                b[i, 1] = SolveB(i, 1);
+                Console.Write("{0: 0,##} ", b[i, 1]);
+                yu[i, 1] = SolveYu(i, 1);
+                Console.Write("{0: 0,##} \r\n", yu[i, 1]);
+
+            }
+
         }
     }
 }
